@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="sv">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#173c2b">
+  <meta name="description" content="Jansson eget material – karta och objektregister för ris, grot, stamved och klippmaterial.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jansson eget material">
+  <link rel="manifest" href="./manifest.json">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+  <title>Jansson eget material</title>
+  <style>
+    :root {
+      --green:#173c2b;
+      --green2:#24583f;
+      --text:#f7faf8;
+      --danger:#d92134;
+      --shadow:0 8px 28px rgba(0,0,0,.22);
+    }
+    * { box-sizing:border-box; }
+    html,body { margin:0; width:100%; height:100%; overflow:hidden; background:#0f241a; font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    body { padding-top:env(safe-area-inset-top); padding-bottom:env(safe-area-inset-bottom); }
+    #appFrame {
+      position:fixed;
+      top:env(safe-area-inset-top);
+      left:0;
+      right:0;
+      bottom:env(safe-area-inset-bottom);
+      width:100%;
+      height:calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      border:0;
+      background:white;
+    }
+    #offline {
+      position:fixed; left:50%; top:calc(env(safe-area-inset-top) + 12px); transform:translateX(-50%);
+      z-index:9999; background:var(--danger); color:white; padding:10px 16px; border-radius:999px;
+      font-weight:800; box-shadow:var(--shadow); display:none;
+    }
+    #installBtn {
+      position:fixed; right:14px; top:calc(env(safe-area-inset-top) + 14px); z-index:9998;
+      border:0; border-radius:14px; padding:11px 14px; background:var(--green); color:var(--text);
+      font-size:15px; font-weight:800; box-shadow:var(--shadow); display:none;
+    }
+    #iosHelp {
+      position:fixed; inset:0; z-index:10000; background:rgba(0,0,0,.55); display:none; align-items:flex-end;
+    }
+    #iosHelp .card {
+      width:100%; background:white; color:#172019; border-radius:20px 20px 0 0; padding:22px 20px calc(22px + env(safe-area-inset-bottom));
+      box-shadow:0 -10px 35px rgba(0,0,0,.25);
+    }
+    #iosHelp h2 { margin:0 0 10px; }
+    #iosHelp p { font-size:17px; line-height:1.45; }
+    #iosHelp button { width:100%; border:0; border-radius:12px; padding:14px; font-size:17px; font-weight:800; background:var(--green); color:white; }
+  </style>
+</head>
+<body>
+  <div id="offline">Ingen internetanslutning</div>
+  <button id="installBtn">Installera appen</button>
+  <iframe id="appFrame"
+          title="Jansson eget material"
+          src="https://script.google.com/macros/s/AKfycbwQs430i8ep_g1IK5QO-xVTttKK1R-FgspuwtFCfJ96wXPspwh-Y82PE9B8wqvaQ0Ba/exec"
+          allow="geolocation; camera; clipboard-read; clipboard-write"
+          referrerpolicy="strict-origin-when-cross-origin"></iframe>
+
+  <div id="iosHelp">
+    <div class="card">
+      <h2>Installera Jansson eget material på iPhone</h2>
+      <p>Öppna den här sidan i Safari. Tryck på <b>Dela</b> och välj <b>Lägg till på hemskärmen</b>.</p>
+      <button onclick="document.getElementById('iosHelp').style.display='none'">Stäng</button>
+    </div>
+  </div>
+
+  <script>
+    const offline = document.getElementById('offline');
+    function updateOnline() {
+      offline.style.display = navigator.onLine ? 'none' : 'block';
+    }
+    addEventListener('online', updateOnline);
+    addEventListener('offline', updateOnline);
+    updateOnline();
+
+    if ('serviceWorker' in navigator) {
+      addEventListener('load', () => navigator.serviceWorker.register('./sw.js'));
+    }
+
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('installBtn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      installBtn.style.display = 'block';
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        await deferredPrompt.userChoice;
+        deferredPrompt = null;
+        installBtn.style.display = 'none';
+        return;
+      }
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIOS) document.getElementById('iosHelp').style.display='flex';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.style.display = 'none';
+    });
+
+    // På iPhone finns normalt inget beforeinstallprompt. Visa en diskret installationsknapp
+    // bara när appen inte redan körs från hemskärmen.
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone;
+    if (isIOS && !standalone) {
+      installBtn.textContent = 'Lägg till som app';
+      installBtn.style.display = 'block';
+    }
+  </script>
+</body>
+</html>
